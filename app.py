@@ -20,6 +20,7 @@ def init_session() -> None:
     st.session_state.setdefault("pending_question", "")
     st.session_state.setdefault("final_result", None)
     st.session_state.setdefault("radar_frames", None)
+    st.session_state.setdefault("frame_idx", 0)
     st.session_state.setdefault("advice", None)
     st.session_state.setdefault("error", None)
 
@@ -31,6 +32,7 @@ def reset_session() -> None:
     st.session_state.pending_question = ""
     st.session_state.final_result = None
     st.session_state.radar_frames = None
+    st.session_state.frame_idx = 0
     st.session_state.advice = None
     st.session_state.error = None
 
@@ -68,6 +70,46 @@ def run_agent(input_data) -> None:
             st.session_state.error = f"{type(e).__name__}: {e}"
 
 
+def _frame_label(frame: dict) -> str:
+    dt = parse_t(frame["validtime"]).astimezone(JST)
+    off = frame["offset_min"]
+    return f"{dt:%H:%M} " + ("現在(実況)" if off == 0 else f"+{off}分後の予報")
+
+
+def render_radar_player() -> None:
+    """気象庁の雨雲レーダー風のコマ送りプレイヤー(画像 + プログレスバー + 時刻)"""
+    frames = st.session_state.radar_frames
+    if not frames:
+        return
+    n = len(frames)
+
+    st.markdown("**🌧️ 雨雲レーダー（現在〜+60分 / 10分間隔）**")
+    playing = st.toggle("コマ送り再生", value=True, key="radar_playing")
+
+    # 再生中は run_every で fragment だけが再実行され、1コマずつ進む
+    @st.fragment(run_every=0.8 if (playing and n > 1) else None)
+    def player() -> None:
+        if playing:
+            idx = st.session_state.frame_idx % n
+        else:
+            labels = [_frame_label(f) for f in frames]
+            chosen = st.select_slider(
+                "表示コマ", options=labels,
+                value=labels[st.session_state.frame_idx % n],
+                label_visibility="collapsed",
+            )
+            idx = labels.index(chosen)
+            st.session_state.frame_idx = idx
+
+        st.image(frames[idx]["path"], width="stretch")
+        st.progress((idx + 1) / n, text=_frame_label(frames[idx]))
+
+        if playing:
+            st.session_state.frame_idx = (idx + 1) % n
+
+    player()
+
+
 def render_results() -> None:
     r = st.session_state.final_result
     if r:
@@ -77,14 +119,7 @@ def render_results() -> None:
         col2.metric("経度", f"{r.lon:.6f}")
         st.caption(f"選定理由: {r.reasoning}")
 
-    frames = st.session_state.radar_frames
-    if frames:
-        with st.expander(f"🌧️ 雨雲レーダー時系列（{len(frames)}コマ / 10分間隔）", expanded=False):
-            for f in frames:
-                dt = parse_t(f["validtime"]).astimezone(JST)
-                off = f["offset_min"]
-                label = "現在(実況)" if off == 0 else f"+{off}分後の予報"
-                st.image(f["path"], caption=f"{dt:%H:%M} {label}")
+    render_radar_player()
 
     advice = st.session_state.advice
     if advice:

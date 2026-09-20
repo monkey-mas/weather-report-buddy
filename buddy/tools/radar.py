@@ -136,7 +136,7 @@ def fetch_nowcast(
     lat: float,
     lon: float,
     out_root: str | Path = "output",
-    zoom: int = 12,
+    zoom: int = 14,  # 徒歩移動の範囲感(3タイルで約7km四方)
     tiles: int = 3,
     interval: int = 10,
     ahead: int = 60,
