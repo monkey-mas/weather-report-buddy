@@ -1,0 +1,18 @@
+[project]
+name = "weather-report-buddy"
+version = "0.1.0"
+description = "指定エリアの雨雲レーダー(今後60分)を分析して外出アドバイスをくれる AI エージェント"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit>=1.38.0",
+    "langgraph>=0.3.21",
+    "langchain-openai>=0.3.11",
+    "langchain-core>=0.3.49",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.2",
+    "httpx>=0.27.0",
+    "ddgs>=9.0.0",
+    "python-dotenv>=1.0.1",
+    "pillow>=10.0.0",
+]
