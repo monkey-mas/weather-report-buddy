@@ -19,7 +19,6 @@ def init_session() -> None:
     st.session_state.setdefault("waiting_feedback", False)
     st.session_state.setdefault("final_result", None)
     st.session_state.setdefault("radar_frames", None)
-    st.session_state.setdefault("frame_idx", 0)
     st.session_state.setdefault("advice", None)
     st.session_state.setdefault("error", None)
 
@@ -30,7 +29,6 @@ def reset_session() -> None:
     st.session_state.waiting_feedback = False
     st.session_state.final_result = None
     st.session_state.radar_frames = None
-    st.session_state.frame_idx = 0
     st.session_state.advice = None
     st.session_state.error = None
 
@@ -76,55 +74,89 @@ def _frame_label(frame: dict) -> str:
     return f"{dt:%H:%M} " + ("現在(実況)" if off == 0 else f"+{off}分後の予報")
 
 
-def render_radar_player() -> None:
-    """気象庁の雨雲レーダー風のコマ送りプレイヤー(画像 + プログレスバー + 時刻)"""
+def render_radar_player(key: str = "radar") -> None:
+    """気象庁の雨雲レーダー風のコマ送りプレイヤー。
+
+    上から「画像 → プログレスバー(時刻) → (停止時のみ)コマ選択スライダー → 再生トグル」。
+    コントロール類をすべて画像の下に置くことで、2カラム時に画像の上端が動かない。
+    """
     frames = st.session_state.radar_frames
     if not frames:
         return
     n = len(frames)
+    idx_key = f"{key}_idx"
+    toggle_key = f"{key}_playing"
+    slider_key = f"{key}_slider"
+    st.session_state.setdefault(idx_key, 0)
 
-    st.markdown("**🌧️ 雨雲レーダー（現在〜+60分 / 10分間隔）**")
-    playing = st.toggle("コマ送り再生", value=True, key="radar_playing")
+    # トグルは画像の下に描画するが、run_every の決定に先に値が必要なため
+    # session_state から前回値を読む(トグル変更時は全体再実行されるので整合する)
+    playing = st.session_state.get(toggle_key, True)
 
     # 再生中は run_every で fragment だけが再実行され、1コマずつ進む
     @st.fragment(run_every=0.8 if (playing and n > 1) else None)
     def player() -> None:
+        labels = [_frame_label(f) for f in frames]
         if playing:
-            idx = st.session_state.frame_idx % n
+            # 停止時のスライダー位置は再生で古くなるため破棄し、次回停止時に現コマから始める
+            st.session_state.pop(slider_key, None)
+            idx = st.session_state[idx_key] % n
         else:
-            labels = [_frame_label(f) for f in frames]
-            chosen = st.select_slider(
-                "表示コマ", options=labels,
-                value=labels[st.session_state.frame_idx % n],
-                label_visibility="collapsed",
-            )
-            idx = labels.index(chosen)
-            st.session_state.frame_idx = idx
+            # スライダーは画像の下に描画するため、表示コマは前回値(session_state)から決める
+            if st.session_state.get(slider_key) not in labels:
+                st.session_state[slider_key] = labels[st.session_state[idx_key] % n]
+            idx = labels.index(st.session_state[slider_key])
+            st.session_state[idx_key] = idx
 
         st.image(frames[idx]["path"], width="stretch")
         st.progress((idx + 1) / n, text=_frame_label(frames[idx]))
+        if not playing:
+            st.select_slider(
+                "表示コマ", options=labels,
+                label_visibility="collapsed", key=slider_key,
+            )
 
         if playing:
-            st.session_state.frame_idx = (idx + 1) % n
+            st.session_state[idx_key] = (idx + 1) % n
 
     player()
+    st.toggle("コマ送り再生", value=True, key=toggle_key)
 
 
-def render_results() -> None:
-    r = st.session_state.final_result
-    if r:
-        st.subheader(f"📍 {r.resolved_name}")
-        col1, col2 = st.columns(2)
-        col1.metric("緯度", f"{r.lat:.6f}")
-        col2.metric("経度", f"{r.lon:.6f}")
-        st.caption(f"選定理由: {r.reasoning}")
-
-    render_radar_player()
-
+def _render_advice() -> None:
     advice = st.session_state.advice
     if advice:
         st.success(f"☔ **{advice.advice}**")
         st.caption(f"根拠: {advice.rationale}")
+
+
+def _render_location_details() -> None:
+    r = st.session_state.final_result
+    if r:
+        with st.expander("📍 地点の詳細（緯度経度・選定理由）"):
+            col1, col2 = st.columns(2)
+            col1.metric("緯度", f"{r.lat:.6f}")
+            col2.metric("経度", f"{r.lon:.6f}")
+            st.write(f"選定理由: {r.reasoning}")
+
+
+def render_results() -> None:
+    """結果表示: 場所タイトル → 2カラム(レーダー | アドバイス) → 地点詳細"""
+    if not (
+        st.session_state.final_result
+        or st.session_state.radar_frames
+        or st.session_state.advice
+    ):
+        return
+    r = st.session_state.final_result
+    if r:
+        st.subheader(f"📍 {r.resolved_name}")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        render_radar_player(key="radar")
+    with col2:
+        _render_advice()
+    _render_location_details()
 
 
 def main() -> None:
