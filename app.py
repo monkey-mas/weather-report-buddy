@@ -17,7 +17,6 @@ def init_session() -> None:
     st.session_state.setdefault("messages", [])
     st.session_state.setdefault("thread_id", str(uuid.uuid4()))
     st.session_state.setdefault("waiting_feedback", False)
-    st.session_state.setdefault("pending_question", "")
     st.session_state.setdefault("final_result", None)
     st.session_state.setdefault("radar_frames", None)
     st.session_state.setdefault("frame_idx", 0)
@@ -29,7 +28,6 @@ def reset_session() -> None:
     st.session_state.messages = []
     st.session_state.thread_id = str(uuid.uuid4())
     st.session_state.waiting_feedback = False
-    st.session_state.pending_question = ""
     st.session_state.final_result = None
     st.session_state.radar_frames = None
     st.session_state.frame_idx = 0
@@ -45,9 +43,8 @@ def run_agent(input_data) -> None:
             for chunk in agent.stream(input_data, stream_mode="updates", config=config):
                 for node_name, update in chunk.items():
                     if node_name == "__interrupt__":
-                        # interrupt() の第一引数がタプルで届く
+                        # 質問文はチャット履歴側に表示されるため、フラグだけ立てる
                         st.session_state.waiting_feedback = True
-                        st.session_state.pending_question = update[0].value
                         continue
                     if not isinstance(update, dict):
                         continue
@@ -56,8 +53,11 @@ def run_agent(input_data) -> None:
                         role = m.get("role") if isinstance(m, dict) else getattr(m, "type", "assistant")
                         content = m.get("content") if isinstance(m, dict) else getattr(m, "content", "")
                         if role in ("assistant", "ai") and content:
+                            # 聞き返しの質問は会話として常時表示。
+                            # それ以外の途中経過(地点確定・取得中など)はデバッグ用。
+                            is_debug = not update.get("need_feedback", False)
                             st.session_state.messages.append(
-                                {"role": "assistant", "content": content}
+                                {"role": "assistant", "content": content, "debug": is_debug}
                             )
                     if update.get("result"):
                         st.session_state.final_result = update["result"]
@@ -140,13 +140,17 @@ def main() -> None:
         if st.button("会話をリセット", width="stretch"):
             reset_session()
             st.rerun()
+        debug_mode = st.toggle("デバッグモード", value=False, key="debug_mode",
+                               help="エージェントの途中経過メッセージを表示する")
 
     # 直前の実行で発生したエラー（st.rerun() 後もここで表示される）
     if st.session_state.error:
         st.error(f"エラー: {st.session_state.error}")
 
-    # メッセージ履歴
+    # メッセージ履歴（途中経過はデバッグモード時のみ）
     for msg in st.session_state.messages:
+        if msg.get("debug") and not debug_mode:
+            continue
         st.chat_message(msg["role"]).write(msg["content"])
 
     # 結果表示（緯度経度・レーダー画像・アドバイス）
@@ -154,12 +158,10 @@ def main() -> None:
 
     # フィードバック待ち または 新規入力
     if st.session_state.waiting_feedback:
-        st.info(f"❓ {st.session_state.pending_question}")
         reply = st.chat_input("回答を入力")
         if reply:
             st.session_state.messages.append({"role": "user", "content": reply})
             st.session_state.waiting_feedback = False
-            st.session_state.pending_question = ""
             run_agent(Command(resume=reply))
             st.rerun()
     else:
