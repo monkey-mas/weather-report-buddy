@@ -16,3 +16,9 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "pillow>=10.0.0",
 ]
+
+[tool.uv]
+# 公開から7日未満のリリースを解決候補から外す（悪意ある新リリースへの対策）。
+# 出たばかりの版を意図的に入れたいときは:
+#   uv lock --exclude-newer-package <name>=<date>
+exclude-newer = "7 days"
