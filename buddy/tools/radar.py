@@ -11,6 +11,7 @@
 - 実況(N1)が予報(N2)より先に公開されるレースがあるため、基準時刻は
   「予報(N2)が存在する最新の basetime」から選ぶ
 """
+
 from __future__ import annotations
 
 import io
@@ -18,7 +19,7 @@ import json
 import math
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 from pathlib import Path
 
 import httpx
@@ -60,7 +61,7 @@ class RadarResult:
 
 
 def parse_t(s: str) -> datetime:
-    return datetime.strptime(s, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+    return datetime.strptime(s, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
 
 
 def offset_t(bt: str, minutes: int) -> str:

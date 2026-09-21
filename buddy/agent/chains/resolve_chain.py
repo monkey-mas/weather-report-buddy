@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -19,8 +19,8 @@ class ResolveDecision(BaseModel):
         default=False, description="候補が絞れず追加質問が必要か"
     )
     additional_question: str = Field(default="")
-    chosen_lat: Optional[float] = Field(default=None)
-    chosen_lon: Optional[float] = Field(default=None)
+    chosen_lat: float | None = Field(default=None)
+    chosen_lon: float | None = Field(default=None)
     chosen_name: str = Field(default="")
     reasoning: str = Field(default="", description="この判断に至った根拠")
 

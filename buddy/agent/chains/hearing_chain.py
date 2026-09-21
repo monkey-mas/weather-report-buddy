@@ -14,9 +14,7 @@ def _load_prompt(name: str) -> str:
 
 
 class Hearing(BaseModel):
-    is_need_human_feedback: bool = Field(
-        default=False, description="追加質問が必要か"
-    )
+    is_need_human_feedback: bool = Field(default=False, description="追加質問が必要か")
     additional_question: str = Field(
         default="", description="ユーザーへの追加質問（不要なら空文字）"
     )
@@ -50,7 +48,11 @@ class HearingChain:
 
         # 直近の human メッセージを原クエリとして採用
         original = next(
-            (m.content for m in reversed(messages) if getattr(m, "type", "") == "human"),
+            (
+                m.content
+                for m in reversed(messages)
+                if getattr(m, "type", "") == "human"
+            ),
             "",
         )
         return Command(

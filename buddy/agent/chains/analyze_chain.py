@@ -3,6 +3,7 @@
 既存スクリプトのプロンプトと構造化出力を、urllib 直叩きから
 langchain-openai へ移植したもの。
 """
+
 import base64
 from pathlib import Path
 from typing import Literal

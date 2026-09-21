@@ -2,6 +2,7 @@
 
 使い方: uv run python scripts/debug_hearing.py 虎ノ門駅 東京駅 府中市
 """
+
 import sys
 from pathlib import Path
 

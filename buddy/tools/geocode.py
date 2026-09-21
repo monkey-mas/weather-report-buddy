@@ -1,4 +1,5 @@
 """外部サービス呼び出し: Nominatim (OSM) と DuckDuckGo Web 検索"""
+
 from __future__ import annotations
 
 import time

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Optional, TypedDict
+from typing import Annotated, TypedDict
 
 from langgraph.graph.message import AnyMessage, add_messages
 from pydantic import BaseModel, Field
@@ -19,8 +19,12 @@ class GeoResult(BaseModel):
 class WeatherAdvice(BaseModel):
     """雨雲レーダー分析の結果"""
 
-    advice: str = Field(..., description="ユーザー向けの外出アドバイス(結論のみ、1〜2文)")
-    rationale: str = Field(..., description="アドバイスの根拠(雨雲の位置・移動・強度の変化)")
+    advice: str = Field(
+        ..., description="ユーザー向けの外出アドバイス(結論のみ、1〜2文)"
+    )
+    rationale: str = Field(
+        ..., description="アドバイスの根拠(雨雲の位置・移動・強度の変化)"
+    )
 
 
 class InputState(TypedDict):
@@ -36,10 +40,10 @@ class PrivateState(TypedDict, total=False):
 
 
 class OutputState(TypedDict, total=False):
-    result: Optional[GeoResult]
+    result: GeoResult | None
     radar_basetime: str  # 基準時刻 (UTC "yyyymmddHHMMSS")
     radar_frames: list[dict]  # {"offset_min": int, "validtime": str, "path": str}
-    advice: Optional[WeatherAdvice]
+    advice: WeatherAdvice | None
 
 
 class AgentState(InputState, PrivateState, OutputState):

@@ -1,4 +1,5 @@
 """Streamlit UI: 場所を聞いて雨雲レーダー(今後60分)を分析し、外出アドバイスを返す"""
+
 from __future__ import annotations
 
 import uuid
@@ -36,7 +37,9 @@ def reset_session() -> None:
 def run_agent(input_data) -> None:
     st.session_state.error = None
     config = {"configurable": {"thread_id": st.session_state.thread_id}}
-    with st.spinner("エージェント処理中...（レーダー取得・分析には1分ほどかかることがあります）"):
+    with st.spinner(
+        "エージェント処理中...（レーダー取得・分析には1分ほどかかることがあります）"
+    ):
         try:
             for chunk in agent.stream(input_data, stream_mode="updates", config=config):
                 for node_name, update in chunk.items():
@@ -48,14 +51,26 @@ def run_agent(input_data) -> None:
                         continue
                     for m in update.get("messages", []) or []:
                         # LangGraph が dict 化する場合と AnyMessage の場合の両対応
-                        role = m.get("role") if isinstance(m, dict) else getattr(m, "type", "assistant")
-                        content = m.get("content") if isinstance(m, dict) else getattr(m, "content", "")
+                        role = (
+                            m.get("role")
+                            if isinstance(m, dict)
+                            else getattr(m, "type", "assistant")
+                        )
+                        content = (
+                            m.get("content")
+                            if isinstance(m, dict)
+                            else getattr(m, "content", "")
+                        )
                         if role in ("assistant", "ai") and content:
                             # 聞き返しの質問は会話として常時表示。
                             # それ以外の途中経過(地点確定・取得中など)はデバッグ用。
                             is_debug = not update.get("need_feedback", False)
                             st.session_state.messages.append(
-                                {"role": "assistant", "content": content, "debug": is_debug}
+                                {
+                                    "role": "assistant",
+                                    "content": content,
+                                    "debug": is_debug,
+                                }
                             )
                     if update.get("result"):
                         st.session_state.final_result = update["result"]
@@ -112,8 +127,10 @@ def render_radar_player(key: str = "radar") -> None:
         st.progress((idx + 1) / n, text=_frame_label(frames[idx]))
         if not playing:
             st.select_slider(
-                "表示コマ", options=labels,
-                label_visibility="collapsed", key=slider_key,
+                "表示コマ",
+                options=labels,
+                label_visibility="collapsed",
+                key=slider_key,
             )
 
         if playing:
@@ -162,7 +179,9 @@ def render_results() -> None:
 def main() -> None:
     st.set_page_config(page_title="Weather Report Buddy", page_icon="🌦️")
     st.title("🌦️ Weather Report Buddy")
-    st.caption("場所を教えてもらえたら、今後60分の雨雲レーダーを分析して外出アドバイスをします")
+    st.caption(
+        "場所を教えてもらえたら、今後60分の雨雲レーダーを分析して外出アドバイスをします"
+    )
 
     init_session()
 
@@ -172,8 +191,12 @@ def main() -> None:
         if st.button("会話をリセット", width="stretch"):
             reset_session()
             st.rerun()
-        debug_mode = st.toggle("デバッグモード", value=False, key="debug_mode",
-                               help="エージェントの途中経過メッセージを表示する")
+        debug_mode = st.toggle(
+            "デバッグモード",
+            value=False,
+            key="debug_mode",
+            help="エージェントの途中経過メッセージを表示する",
+        )
 
     # 直前の実行で発生したエラー（st.rerun() 後もここで表示される）
     if st.session_state.error:

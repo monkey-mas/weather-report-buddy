@@ -26,9 +26,7 @@ class WeatherBuddyAgent:
         self.graph: CompiledStateGraph = self._build()
 
     def _build(self) -> CompiledStateGraph:
-        g = StateGraph(
-            state_schema=AgentState, input=InputState, output=OutputState
-        )
+        g = StateGraph(state_schema=AgentState, input=InputState, output=OutputState)
         g.add_node("user_hearing", self.hearing)
         g.add_node("human_feedback", self._human_feedback)
         g.add_node("search_location", self._search_location)
@@ -60,9 +58,7 @@ class WeatherBuddyAgent:
         # 候補が薄い or 見つからない場合は Web 検索も併用（通称対応）
         if len(candidates) <= 1:
             hits = web_search(f"{query} とは 場所 住所", max_results=5)
-            web_hits = [
-                {k: h.get(k) for k in ("title", "href", "body")} for h in hits
-            ]
+            web_hits = [{k: h.get(k) for k in ("title", "href", "body")} for h in hits]
             # web の上位ヒットタイトルで再 geocode を試みる
             for h in hits[:2]:
                 title = (h.get("title") or "").strip()
