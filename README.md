@@ -1,5 +1,7 @@
 # 🌦️ Weather Report Buddy
 
+English | [日本語](README.ja.md)
+
 > A small conversational agent for one question: *"Tell me if I need an umbrella — and how long I've got."*
 
 ![demo](docs/demo-ambiguous.gif)
