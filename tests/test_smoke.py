@@ -1,18 +1,17 @@
-"""Smoke test: the app can be loaded from a clean install of the lockfile.
+"""smoke test: lockfile からの clean install でアプリがロードできること。
 
-`uv sync --locked` only proves the 77 dependencies *install*. It does not prove
-they still expose the API this code calls. That gap is real here: this project
-pins deep import paths into fast-moving libraries (langgraph, langchain-core),
-and one of its dependencies has already been renamed once (duckduckgo_search ->
-ddgs).
+uv sync --locked が保証するのは、ロックされた依存が「インストールできる」
+ことまでで、それらが今もこのコードの呼ぶ API を提供しているかは別の話。
+ここではその差が実際に効く。langgraph / langchain-core の深い import パスを
+掴んでおり、依存の1つは既に改名を経験している（duckduckgo_search -> ddgs）。
 
-Importing buddy.agent.graph happens to exercise far more than an import:
-the module builds a WeatherBuddyAgent at import time, which reads Settings,
-constructs two ChatOpenAI clients, and compiles the LangGraph graph. So a
-single import covers the parts most likely to break on a dependency upgrade.
+buddy.agent.graph の import は、たまたま import 以上のことをする。モジュール
+直下で WeatherBuddyAgent を組み立てるため、Settings を読み、ChatOpenAI を2つ
+構築し、LangGraph のグラフを compile するところまで走る。依存の更新で最初に
+壊れる部分が、1行の import でまとめて動く。
 
-No network call is made. Constructing ChatOpenAI does not contact the API;
-it only requires that a key be present, which .env.example supplies in CI.
+ネットワークには出ない。ChatOpenAI は構築時に API を叩かず、キーが存在する
+ことだけを要求する。CI では .env.example がそれを供給する。
 """
 
 

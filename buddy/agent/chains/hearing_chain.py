@@ -8,9 +8,29 @@ from langchain_openai import ChatOpenAI
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
+from buddy.timeutil import JST
+
 
 def _load_prompt(name: str) -> str:
     return (Path(__file__).parent / "prompts" / f"{name}.prompt").read_text().strip()
+
+
+def _current_date_jst() -> str:
+    """プロンプトの {current_date} に渡す「今日」。
+
+    naive な datetime.now() はプロセスのタイムゾーンに従う。手元では JST の
+    マシンで動かしていたので正しく見えていたが、UTC のコンテナに載せると
+    00:00-09:00 JST の間だけ前日の日付を LLM に渡す。この値は会話中の
+    「明日」のような相対表現を解釈させるためのものなので、ずれると場所では
+    なく日付の解釈を静かに間違える。
+
+    ナウキャストは日本国内しか覆わず、利用者の「今日」は常に JST。
+    """
+    # TODO: プロンプト側は「現在日時」と書いているが、渡しているのは日付だけで
+    # 時刻が無い。「今から1時間後」のような相対表現を解釈させたいなら情報が
+    # 足りない。時刻まで渡すか、プロンプトの文言を「現在日付」に寄せるか、
+    # どちらかに揃える必要がある。プロンプト設計の判断なので保留。
+    return datetime.now(JST).strftime("%Y-%m-%d")
 
 
 class Hearing(BaseModel):
@@ -70,7 +90,7 @@ class HearingChain:
         )
         return chain.invoke(
             {
-                "current_date": datetime.now().strftime("%Y-%m-%d"),
+                "current_date": _current_date_jst(),
                 "conversation_history": self._format(messages),
             }
         )
