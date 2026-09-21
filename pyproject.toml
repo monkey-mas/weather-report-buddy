@@ -23,6 +23,19 @@ dev = [
     "pytest>=8.0",
 ]
 
+[tool.pytest.ini_options]
+# buddy をルートから import できるようにする。
+#
+# これはライブラリではなくアプリケーションなので build-system を持たず、
+# その結果 uv はプロジェクト自身を venv にインストールしない（依存だけ入る）。
+# 加えて pytest が sys.path に入れるのはテストファイルのある tests/ であって
+# ルートではない。両者が重なって buddy が見つからなくなる。
+#
+# streamlit run app.py ではルート起点で Python が sys.path を通すため、
+# これまで表面化していなかった。ここは rootdir 相対で解決されるので、
+# どのディレクトリから pytest を叩いても同じ結果になる。
+pythonpath = ["."]
+
 [tool.ruff.lint]
 # ruff の既定に任せず明示する。既定のルール集合は版を追うごとに広がっており
 # （0.16 は旧版が見なかった UP / BLE / DTZ を指摘する）、明示しないとコードを
