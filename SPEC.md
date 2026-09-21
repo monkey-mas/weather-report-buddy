@@ -17,21 +17,23 @@
 
 - **LangGraph** によるエージェントグラフ
 
+分岐は静的エッジではなく、各ノードが返す `Command(goto=...)` で決まる。
+
 ```
-user_hearing ──(曖昧)──> human_feedback (interrupt) ──> user_hearing
-     │
-  (明確)
-     ▼
-search_location (Nominatim で緯度経度候補取得)
-     ▼
-resolve (LLM が最適候補を選定)
-     ▼
-fetch_radar (気象庁ナウキャスト +60分 / 10分刻み の合成画像を取得)
-     ▼
-analyze (画像群を Vision LLM で分析 → advice / rationale)
-     ▼
-END (UI に表示)
+START           ──→ user_hearing
+user_hearing    ──→ human_feedback   (入力が曖昧)
+user_hearing    ──→ search_location  (入力が明確)
+human_feedback  ──→ user_hearing     (回答後は入口に関係なく必ずここへ戻る)
+search_location ──→ resolve          (Nominatim / 必要なら Web 検索で候補取得)
+resolve         ──→ human_feedback   (候補が1件に絞れない)
+resolve         ──→ fetch_radar      (1件に確定)
+fetch_radar     ──→ analyze          (現在〜+60分 / 10分刻みの合成画像を取得)
+analyze         ──→ END              (advice / rationale を UI に表示)
 ```
+
+聞き返し（`interrupt()`）の入口は **`user_hearing` と `resolve` の2箇所**ある。
+`human_feedback` はどちらから来ても `user_hearing` へ戻るため、resolve 由来の
+聞き返しでも曖昧さ判定からやり直しになる。
 
 ## 各ステップの仕様
 
@@ -41,8 +43,9 @@ END (UI に表示)
 
 ### 2. ジオコーディング（search_location / resolve）
 - Nominatim (OpenStreetMap) で緯度経度候補を取得（1req/sec スロットル、User-Agent 必須）
-- 候補不足時は DuckDuckGo 検索で通称を解決
+- 候補不足時は DuckDuckGo 検索（`ddgs`）で通称を解決
 - LLM が候補から最適な1件を選定し、理由を付与
+- 候補が絞れない場合は `interrupt()` でユーザーに聞き返す（`need_more_info`）
 
 ### 3. 雨雲レーダー取得（fetch_radar）
 - 気象庁ナウキャスト（`product=nowc`, `element=hrpns`）の PNG タイルを取得
@@ -75,4 +78,4 @@ END (UI に表示)
 ## 技術スタック
 
 - Python 3.11+ / uv（pyproject.toml）
-- streamlit, langgraph, langchain-openai, pydantic, httpx, duckduckgo-search, python-dotenv, Pillow
+- streamlit, langgraph, langchain-openai, langchain-core, pydantic, pydantic-settings, httpx, ddgs, python-dotenv, Pillow
