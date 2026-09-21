@@ -9,7 +9,8 @@ from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
 from buddy.agent.graph import agent
-from buddy.tools.radar import JST, parse_t
+from buddy.timeutil import JST
+from buddy.tools.radar import parse_t
 
 PROMPT_TEXT = "雨雲レーダーを確認したい場所を教えて"
 

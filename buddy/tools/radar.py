@@ -19,15 +19,16 @@ import json
 import math
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone, UTC
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 import httpx
 from PIL import Image, ImageDraw
 
+from buddy.timeutil import JST
+
 TILE_SIZE = 256
 RADAR_MAX_ZOOM = 10  # 雨雲タイルのネイティブ最大ズーム
-JST = timezone(timedelta(hours=9))
 
 JMA_TIMES_URL = "https://www.jma.go.jp/bosai/jmatile/data/{path}"
 JMA_TILE_URL = (

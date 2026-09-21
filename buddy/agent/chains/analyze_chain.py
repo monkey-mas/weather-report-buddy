@@ -13,7 +13,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.types import Command
 
 from buddy.agent.state import WeatherAdvice
-from buddy.tools.radar import JST, parse_t
+from buddy.timeutil import JST
+from buddy.tools.radar import parse_t
 
 
 def _load_prompt(name: str) -> str:
