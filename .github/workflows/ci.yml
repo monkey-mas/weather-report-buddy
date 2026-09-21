@@ -1,0 +1,46 @@
+name: CI
+
+# Push only. There is deliberately no scheduled run: periodic dependency checks
+# are Dependabot's job, and Dependabot is not enabled yet (see README).
+on: push
+
+# The default token is wider than anything here needs. A compromised action
+# should not be able to write to the repository.
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    # This job requires no secrets. Nothing here can leak a credential, because
+    # there is no credential to leak.
+    steps:
+      # Actions are pinned to a commit SHA rather than a tag. Tags are mutable and
+      # can be repointed at different code. The cost is that these have to be
+      # bumped by hand until Dependabot's github-actions ecosystem is enabled.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # uv audit and the malware check are both experimental, so uv is pinned to an
+      # exact version instead of tracking latest.
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.11.29"
+
+      # --locked fails rather than silently regenerating uv.lock.
+      #
+      # UV_MALWARE_CHECK matches the resolved packages against OSV's malware
+      # advisories and aborts before any of their code runs. It catches *known*
+      # malicious releases only; a fresh one with no advisory yet still gets
+      # through, which is what the exclude-newer window in pyproject.toml is for.
+      #
+      # It is set here and not in pyproject.toml because it is fail-closed: when
+      # OSV is unreachable, uv sync exits non-zero. Failing a CI run on that is
+      # fine; breaking `uv sync` for someone cloning the repo offline is not.
+      - name: Install from the lockfile
+        env:
+          UV_MALWARE_CHECK: "1"
+        run: uv sync --locked --preview-features malware-check
+
+      - name: Audit dependencies
+        run: uv audit --frozen --preview-features audit-command
