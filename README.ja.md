@@ -68,7 +68,7 @@ buddy/
 scripts/debug_hearing.py      曖昧さ判定だけを単体で叩く CLI
 ```
 
-LangGraph（状態 + `interrupt()`）、Streamlit、OpenAI のモデル2つ——場所の解決に小さいモデル、レーダーの読み取りに Vision モデル。約950行。詳細仕様は [SPEC.ja.md](SPEC.ja.md)。
+LangGraph（状態 + `interrupt()`）、Streamlit、OpenAI のモデル2つ——場所の解決に小さいモデル、レーダーの読み取りに Vision モデル。Python は数千行もない。詳細仕様は [SPEC.ja.md](SPEC.ja.md)。
 
 とくに挙げておきたい判断が3つあります。
 

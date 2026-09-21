@@ -68,7 +68,7 @@ buddy/
 scripts/debug_hearing.py      exercise the ambiguity judgement on its own
 ```
 
-LangGraph (state + `interrupt()`), Streamlit, and two OpenAI models — a small one to resolve the place, a vision one to read the radar. ~950 lines. Fuller spec in [SPEC.md](SPEC.md).
+LangGraph (state + `interrupt()`), Streamlit, and two OpenAI models — a small one to resolve the place, a vision one to read the radar. Not thousands of lines of Python. Fuller spec in [SPEC.md](SPEC.md).
 
 Three choices worth calling out:
 
