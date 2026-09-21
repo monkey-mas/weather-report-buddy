@@ -44,3 +44,44 @@ jobs:
 
       - name: Audit dependencies
         run: uv audit --frozen --preview-features audit-command
+
+  lint-and-test:
+    name: Lint and smoke test
+    runs-on: ubuntu-latest
+    # Deliberately parallel with the audit job rather than gated behind it.
+    # Installing dependencies here runs their code before the other job's
+    # malware check has finished, but this runner is ephemeral and holds no
+    # credentials. What exclude-newer and the malware check protect is the
+    # developer's machine and its API key, neither of which is here.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Same pinned uv as the audit job, so both jobs resolve identically.
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.11.29"
+
+      # --locked fails rather than silently regenerating uv.lock. The
+      # interpreter comes from .python-version, so CI and local development
+      # resolve against the same Python.
+      - name: Install from the lockfile
+        run: uv sync --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      # Proves the app still loads against the locked dependencies, which
+      # installing them does not: importing the graph also constructs the
+      # ChatOpenAI clients and compiles the LangGraph graph.
+      - name: Smoke test
+        # Uses the committed .env.example instead of values written inline here,
+        # so a stale .env.example fails CI rather than silently breaking the
+        # first run after a clone. The key in it is a placeholder and nothing
+        # calls the API. Guarded so that running these steps outside CI cannot
+        # overwrite a real .env.
+        run: |
+          [ -f .env ] || cp .env.example .env
+          uv run pytest -q
