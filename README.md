@@ -81,6 +81,7 @@ Three choices worth calling out:
 - **Regulatory guard** — publishing forecasts in Japan is regulated under the Meteorological Service Act. This is a personal PoC, not a licensed service.
 - **In-app i18n** — the UI stays Japanese because the data source is Japan-only. The docs are bilingual instead.
 - **Persistence / multi-location watch** — out of scope for the one question above.
+- **Fast patching of known CVEs** — the two dependency threats pull in opposite directions: patching fast means adopting unvetted releases fast. With no deployment and no inbound requests, a known CVE has little attack surface here, while a hijacked release would cost a developer machine and an API key. So new releases wait out a cooldown, and CVEs are reported by an audit step rather than auto-merged. SBOMs and signing are absent for a simpler reason: nothing is distributed as a package.
 
 ## Credits
 
