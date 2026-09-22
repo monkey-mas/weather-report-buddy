@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.types import Command
 from pydantic import BaseModel, Field
 
-from buddy.timeutil import JST
+from buddy.timeutil import jst_date
 
 
 def _load_prompt(name: str) -> str:
@@ -25,12 +25,16 @@ def _current_date_jst() -> str:
     なく日付の解釈を静かに間違える。
 
     ナウキャストは日本国内しか覆わず、利用者の「今日」は常に JST。
+
+    now() に渡すのが UTC なのは、jst_date が受け取った時刻を JST へ直すので
+    どの aware なタイムゾーンでも結果が同じになるため。ここで JST を渡し忘れる
+    ことが上のバグだったので、渡す値が結果を左右しない形にしてある。
     """
     # TODO: プロンプト側は「現在日時」と書いているが、渡しているのは日付だけで
     # 時刻が無い。「今から1時間後」のような相対表現を解釈させたいなら情報が
     # 足りない。時刻まで渡すか、プロンプトの文言を「現在日付」に寄せるか、
     # どちらかに揃える必要がある。プロンプト設計の判断なので保留。
-    return datetime.now(JST).strftime("%Y-%m-%d")
+    return jst_date(datetime.now(UTC))
 
 
 class Hearing(BaseModel):

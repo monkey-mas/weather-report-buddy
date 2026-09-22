@@ -9,6 +9,24 @@ ZoneInfo("Asia/Tokyo") ではなく固定オフセットにしている。JST �
 両者は一致し、固定オフセットなら tzdata が入っていない環境でも動く。
 """
 
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 JST = timezone(timedelta(hours=9))
+
+
+def jst_date(t: datetime) -> str:
+    """aware な時刻 t を、JST から見た日付の文字列にする。
+
+    「時計を読む」ことと「読んだ値を JST の日付に直す」ことを分けている。
+    後者だけを取り出すと入力を引数で渡せるので、時計を差し替えずに
+    任意の瞬間について検証できる（tests/test_timeutil.py）。
+
+    分けたことで、呼び出し側が now() にどのタイムゾーンを渡していても
+    結果が変わらなくなる。以前ここが一体だったときは「JST を渡し忘れる」
+    ことが日付のずれに直結していた。残る前提は t が aware であることだけで、
+    そこは ruff の DTZ が押さえる。
+
+    t は aware であること。astimezone は naive をローカル時刻とみなすので、
+    naive を渡すと結果が実行環境に依存する（まさに直したかったバグの形）。
+    """
+    return t.astimezone(JST).strftime("%Y-%m-%d")
